@@ -49,7 +49,7 @@ void InitializeGameState(GameState& gs) {
 	gs.camera = { 0 };
 	gs.camera.position = Vector3{ 0.0f, 3.0f, 5.0f };
 	gs.camera.target = Vector3{ 0.0f, 0.0f, -5.0f };
-	gs.camera.up = Vector3{ 0.0f, 1.0f, 0.0f };
+	gs.camera.up = Vector3{ 0.0f, 1.0f, 0.0f  };
 	gs.camera.fovy = 45.0f;
 	gs.camera.projection = CAMERA_PERSPECTIVE;
 
@@ -137,6 +137,7 @@ int main() {
 
 		const float deltaTime = GetFrameTime();
 		Vector3 originalPlayerPos = gs.playerPosition;
+		gs.forwardVelocty += 0.1 * deltaTime;
 		spawnTimer -= deltaTime;
 		if (spawnTimer < 0) {
 			//spawn new obstacle
@@ -144,7 +145,7 @@ int main() {
 			// reset timer
 			spawnTimer = GetRandomValue(2, 4);
 		}
-		const float playerLateralAcceleration = 1;
+		const float playerLateralAcceleration = 2;
 		if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) { gs.playerVelocity.x -= playerLateralAcceleration * deltaTime; }
 		if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) { gs.playerVelocity.x += playerLateralAcceleration * deltaTime; }
 
