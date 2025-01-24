@@ -1,6 +1,6 @@
 #include "raylib.h"
 #include "raymath.h"
-#include <vector>
+#include <deque>
 
 enum class Lane {
 	left = -1, center, right
@@ -15,7 +15,7 @@ const float PLAYER_RADIUS = .4f;
 
 struct GameState {
 
-	std::vector<Obstacle> obstacles;
+	std::deque<Obstacle> obstacles;
 	Camera3D camera; // = { 0 };
 	Model roadModel; // 
 
@@ -39,7 +39,7 @@ struct GameState {
 	float forwardVelocty;
 	Vector3 roadPosition;
 
-}; // TODO refactor 
+};
 
 void DrawGame(const GameState& gs);
 void InitializeGameState(GameState& gs) {
@@ -166,6 +166,17 @@ int main() {
 		Vector3 axis = Vector3CrossProduct(playerRelativeVelocity, up);
 		float angularSpeed = Vector3Length(playerRelativeVelocity) / PLAYER_RADIUS;
 		gs.playerModel.transform = MatrixMultiply(gs.playerModel.transform, MatrixRotate(axis, -angularSpeed  * deltaTime));
+		
+		if (gs.obstacles.size() > 0 && gs.obstacles[0].distance <= -10.0f) {
+			gs.obstacles.pop_front();
+		}
+
+		for (size_t i = 0; i < gs.obstacles.size(); i++)
+		{	
+			Obstacle obs = gs.obstacles[i];
+			// calculate obstacle-player intersection
+		}
+		
 		//Draw
 		BeginDrawing();
 		DrawGame(gs);
