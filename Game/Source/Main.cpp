@@ -61,7 +61,7 @@ void InitializeGameState(GameState& gs) {
 	gs.camera.projection = CAMERA_PERSPECTIVE;
 
 	Texture2D roadTexture = LoadTexture("Assets/road.png");
-	gs.roadModel = LoadModelFromMesh(GenMeshPlane(4.0f, 200.0f, 2, 2));
+	gs.roadModel = LoadModelFromMesh(GenMeshPlane(3.0f, 200.0f, 2, 2));
 	gs.roadModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = roadTexture;
 	gs.blurShader = LoadShader(0, "Shaders/blur.fs");
 	float tiling[2] = { 1.0f, 10.0f };
@@ -72,7 +72,7 @@ void InitializeGameState(GameState& gs) {
 	gs.playerPosition = { 0.0f, PLAYER_RADIUS * 1.0f, 0.0f };
 	gs.playerVelocity = { 0.0f };
 	gs.roadPosition = { 0.0f };
-	gs.forwardVelocty = 2;
+	gs.forwardVelocty = 4;
 
 	int tintColorLoc = GetShaderLocation(gs.blurShader, "tintColor");
 	int tintStrengthLoc = GetShaderLocation(gs.blurShader, "tintStrength");
@@ -94,8 +94,9 @@ void InitializeGameState(GameState& gs) {
 
 }
 
-void DrawCenteredText(const GameState& gs, const char* text, int posY, int fontSize) {
-	DrawText(text, gs.screenWidth * 0.5 - MeasureText(text, fontSize) * 0.5, posY, fontSize, BLACK);
+static void DrawCenteredText(const char* text, int posX, int posY, int fontSize, Color color) {
+	const int width = MeasureText(text, fontSize);
+	DrawText(text, posX - width * 0.5, posY, fontSize, color);
 }
 
 int main() {
@@ -144,7 +145,7 @@ int main() {
 
 
 			//DrawRectangle(0, 0, W, H, Color{ 255, 255, 255, 50 });
-			DrawCenteredText(gs, "Paused", gs.screenHeight * 0.1, 50);
+			DrawCenteredText("Paused", gs.screenWidth * 0.5, gs.screenHeight * 0.1, 50, BLACK);
 			EndDrawing();
 
 			continue;
@@ -154,7 +155,7 @@ int main() {
 			BeginDrawing();
 			ClearBackground(WHITE);
 
-			DrawCenteredText(gs, "Game Over", gs.screenHeight * 0.1, 50);
+			DrawCenteredText("Game Over", gs.screenWidth * 0.5, gs.screenHeight * 0.1, 50, BLACK);
 
 			
 			EndDrawing();
@@ -173,8 +174,12 @@ int main() {
 		if (gs.timeUntilNextSpawn < 0) {
 			//spawn new obstacle
 			gs.obstacles.push_back(Obstacle{ (Lane)GetRandomValue(-1, 1), 20.0 });
+			if (GetRandomValue(1, 3) == 1) {
+			
+				gs.obstacles[gs.obstacles.size() - 1].lane = (Lane)(int)std::round(gs.playerPosition.x);
+			}
 			// reset timer
-			gs.timeUntilNextSpawn = GetRandomValue(2, 4);
+			gs.timeUntilNextSpawn = GetRandomValue(1.5, 2.5);
 		}
 		const float playerLateralAcceleration = 2;
 		if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) { gs.playerVelocity.x -= playerLateralAcceleration * deltaTime; }
@@ -246,7 +251,7 @@ void DrawGame(const GameState& gs)
 	EndMode3D();
 	DrawFPS(10, 10);
 	std::string drawString = std::to_string((int)std::round(gs.score));
-	DrawCenteredText(gs, drawString.c_str(), gs.screenHeight * 0.1, 36);
+	DrawCenteredText(drawString.c_str(), gs.screenWidth * 0.5, gs.screenHeight * 0.06, 36, BLACK);
 
 
 }
