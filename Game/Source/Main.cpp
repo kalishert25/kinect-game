@@ -1,6 +1,8 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <deque>
+#include <string>
+#include <cmath>
 
 enum class Lane {
 	left = -1, center, right
@@ -25,14 +27,16 @@ struct GameState {
 	Shader tilingShader;
 	int renderWidthLoc;
 	int renderHeightLoc;
-
+	float timeUntilNextSpawn;
+	float score;
 
 	int screenWidth;
 	int screenHeight;
 	
 
 	bool isPaused; // false
-	
+	bool isGameOver;
+
 	Model playerModel;
 	Vector3 playerVelocity;
 	Vector3 playerPosition;
@@ -44,7 +48,10 @@ struct GameState {
 void DrawGame(const GameState& gs);
 void InitializeGameState(GameState& gs) {
 	gs.isPaused = false;
-	
+	gs.isGameOver = false;
+	gs.timeUntilNextSpawn = 0.0f;
+	gs.score = 0.0f;
+	gs.obstacles.clear();
 	gs.renderTexture = LoadRenderTexture(gs.screenWidth, gs.screenHeight);
 	gs.camera = { 0 };
 	gs.camera.position = Vector3{ 0.0f, 3.0f, 5.0f };
@@ -86,6 +93,11 @@ void InitializeGameState(GameState& gs) {
 	gs.playerModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = playerTexture;
 
 }
+
+void DrawCenteredText(const GameState& gs, const char* text, int posY, int fontSize) {
+	DrawText(text, gs.screenWidth * 0.5 - MeasureText(text, fontSize) * 0.5, posY, fontSize, BLACK);
+}
+
 int main() {
 
 	GameState gs{};
@@ -103,7 +115,6 @@ int main() {
 	// -------------------------------------------------------
 	// main game loop
 	// -------------------------------------------------------
-	float spawnTimer = 0; //sec
 	while (!WindowShouldClose()) {
 		if (GetScreenWidth() != gs.screenWidth || GetScreenHeight() != gs.screenHeight) {
 			gs.renderTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
@@ -112,7 +123,13 @@ int main() {
 			SetShaderValue(gs.blurShader, gs.renderWidthLoc, &gs.screenWidth, SHADER_UNIFORM_FLOAT);
 			SetShaderValue(gs.blurShader, gs.renderHeightLoc, &gs.screenHeight, SHADER_UNIFORM_FLOAT);
 		}
-		if (IsKeyPressed(KEY_SPACE)) { gs.isPaused = !gs.isPaused; }
+		if (IsKeyPressed(KEY_SPACE)) { 
+			gs.isPaused = !gs.isPaused; 
+			if (gs.isGameOver)
+			{
+				InitializeGameState(gs);
+			}
+		}
 		if (gs.isPaused) {
 
 			BeginTextureMode(gs.renderTexture);
@@ -127,23 +144,37 @@ int main() {
 
 
 			//DrawRectangle(0, 0, W, H, Color{ 255, 255, 255, 50 });
-			DrawText("Paused", gs.screenWidth * 0.5 - MeasureText("Paused", 50) * 0.5, gs.screenHeight * 0.1, 50, BLACK);
+			DrawCenteredText(gs, "Paused", gs.screenHeight * 0.1, 50);
+			EndDrawing();
 
+			continue;
+		}
+		else if (gs.isGameOver) {
+
+			BeginDrawing();
+			ClearBackground(WHITE);
+
+			DrawCenteredText(gs, "Game Over", gs.screenHeight * 0.1, 50);
+
+			
 			EndDrawing();
 
 			continue;
 		}
 		//Update
-
+		
 		const float deltaTime = GetFrameTime();
+		gs.score += deltaTime*10;
+
 		Vector3 originalPlayerPos = gs.playerPosition;
 		gs.forwardVelocty += 0.1 * deltaTime;
-		spawnTimer -= deltaTime;
-		if (spawnTimer < 0) {
+		gs.timeUntilNextSpawn -= deltaTime;
+
+		if (gs.timeUntilNextSpawn < 0) {
 			//spawn new obstacle
 			gs.obstacles.push_back(Obstacle{ (Lane)GetRandomValue(-1, 1), 20.0 });
 			// reset timer
-			spawnTimer = GetRandomValue(2, 4);
+			gs.timeUntilNextSpawn = GetRandomValue(2, 4);
 		}
 		const float playerLateralAcceleration = 2;
 		if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) { gs.playerVelocity.x -= playerLateralAcceleration * deltaTime; }
@@ -174,6 +205,16 @@ int main() {
 		for (size_t i = 0; i < gs.obstacles.size(); i++)
 		{	
 			Obstacle obs = gs.obstacles[i];
+			Vector2 c2 = Vector2{ (float)obs.lane, obs.distance };
+			float obstacleRadius = 0.5f;
+			Vector2 c1 = Vector2{ gs.playerPosition.x, gs.playerPosition.z };
+			//float distance = sqrtf((c2.y - c1.y)* (c2.y - c1.y)  + (c2.x - c1.x) * (c2.x - c1.x));
+			float distance = Vector2Distance(c1, c2);
+			if (distance < obstacleRadius + PLAYER_RADIUS)
+			{
+				gs.isGameOver = true;
+				break;
+			}
 			// calculate obstacle-player intersection
 		}
 		
@@ -204,6 +245,9 @@ void DrawGame(const GameState& gs)
 	DrawModel(gs.roadModel, gs.roadPosition, 1.0, WHITE);
 	EndMode3D();
 	DrawFPS(10, 10);
+	std::string drawString = std::to_string((int)std::round(gs.score));
+	DrawCenteredText(gs, drawString.c_str(), gs.screenHeight * 0.1, 36);
+
 
 }
 
