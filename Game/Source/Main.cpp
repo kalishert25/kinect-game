@@ -43,6 +43,8 @@ struct GameState {
 	float forwardVelocty;
 	Vector3 roadPosition;
 
+	Model roadSpikeModel;
+
 };
 
 void DrawGame(const GameState& gs);
@@ -61,6 +63,12 @@ void InitializeGameState(GameState& gs) {
 	gs.camera.projection = CAMERA_PERSPECTIVE;
 
 	Texture2D roadTexture = LoadTexture("Assets/road.png");
+
+	gs.roadSpikeModel = LoadModel("Game/Assets/roadspike.obj");
+	//Texture roadSpikeTexture = LoadTexture("Assets/roadspike.mtl");
+
+	//gs.roadSpikeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = roadSpikeTexture;
+
 	gs.roadModel = LoadModelFromMesh(GenMeshPlane(3.0f, 200.0f, 2, 2));
 	gs.roadModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = roadTexture;
 	gs.blurShader = LoadShader(0, "Shaders/blur.fs");
@@ -181,7 +189,7 @@ int main() {
 			// reset timer
 			gs.timeUntilNextSpawn = GetRandomValue(1.5, 2.5);
 		}
-		const float playerLateralAcceleration = 2;
+		const float playerLateralAcceleration = 3;
 		if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) { gs.playerVelocity.x -= playerLateralAcceleration * deltaTime; }
 		if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) { gs.playerVelocity.x += playerLateralAcceleration * deltaTime; }
 
@@ -242,9 +250,10 @@ void DrawGame(const GameState& gs)
 		//DrawLine3D(gs.playerPosition, Vector3Add(gs.playerPosition, Vector3Normalize(axis)), RED);
 
 	for (int i = 0; i < gs.obstacles.size(); i++) {
-		Vector3 pos{ (float)gs.obstacles[i].lane, 0.8f, -gs.obstacles[i].distance };
-		DrawCube(pos, 0.8f, 1.0f, 0.8f, Color{ 155, 50, 120, 255 });
-		DrawCubeWires(pos, 0.8f, 1.0f, 0.8f, BLACK);
+		Vector3 pos{ (float)gs.obstacles[i].lane, 0.0f, -gs.obstacles[i].distance };
+
+		DrawModel(gs.roadSpikeModel, pos, 0.08, WHITE);
+
 
 	}
 	DrawModel(gs.roadModel, gs.roadPosition, 1.0, WHITE);
